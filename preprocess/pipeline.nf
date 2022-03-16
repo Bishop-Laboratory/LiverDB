@@ -1,29 +1,137 @@
 #!/usr/bin/env nextflow
 
-// CONSTANTS -------------------------------------------------------------------
-REF_DIR = "Homo_sapiens.GRCh38.103"
-FA_URL = "http://ftp.ensembl.org/pub/release-103/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-FA_FILENAME = "Homo_sapiens.GRCh38.dna.primary_assembly.fa"
-GTF_URL = "http://ftp.ensembl.org/pub/release-103/gtf/homo_sapiens/Homo_sapiens.GRCh38.103.gtf.gz"
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    CONSTANTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+OUTDIR = "out"
+
+FA_URL       = "http://ftp.ensembl.org/pub/release-103/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+FA_FILENAME  = "Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+GTF_URL      = "http://ftp.ensembl.org/pub/release-103/gtf/homo_sapiens/Homo_sapiens.GRCh38.103.gtf.gz"
 GTF_FILENAME = "Homo_sapiens.GRCh38.103.gtf"
 
-DATA_DIR = "data"
 
-RUN_IDS = file("SRR_list.txt").readLines()
-RUN_IDS.removeAll { !it }  // remove empty elements from list
-run_ch = Channel.value(RUN_IDS)
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    CHANNEL INITIALIZATIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+// Get sample IDs from metadata.csv
+@Grab('com.xlson.groovycsv:groovycsv:1.3')
+import static com.xlson.groovycsv.CsvParser.parseCsv
+ 
+fh = new File("metadata/metadata.csv")
+def data = parseCsv(fh.getText('utf-8'))
+
+def se_runs = []
+def pe_runs = []
+
+for(line in data) {
+  if(line.paired_end == "FALSE") {
+    se_runs.add(line.sample_id)
+  } else {
+    pe_runs.add(line.sample_id)  
+  }
+}
+
+// Starting channels
+ch_se_runs   = Channel.value(se_runs)
+ch_pe_runs   = Channel.value(pe_runs)
+ch_rscript   = Channel.fromPath("scripts/downstream.R")
+ch_metadata  = Channel.fromPath("metadata/metadata.csv")
+ch_contrasts = Channel.fromPath("metadata/contrasts.csv")
 
 
-// PROCESSES -------------------------------------------------------------------
-process download_sra {
-  
-  //publishDir "${DATA_DIR}", mode: "move"
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    PROCESSES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+process DOWNLOAD_FA {
+
+  output:
+  file "${FA_FILENAME}" into ch_fa_index
+
+  script:
+  """
+  wget ${FA_URL}
+  gunzip ${FA_FILENAME}.gz
+  """
+
+  stub:
+  """
+  echo wget ${FA_URL} > ${FA_FILENAME}
+  echo gunzip ${FA_FILENAME}.gz >> ${FA_FILENAME}
+  """
+}
+
+
+process DOWNLOAD_GTF {
+
+  output:
+  file "${GTF_FILENAME}" into ch_gtf_index, ch_gtf_align
+
+  script:
+  """
+  wget ${GTF_URL}
+  gunzip ${GTF_FILENAME}.gz
+  """
+
+  stub:
+  """
+  echo wget ${GTF_URL} > ${GTF_FILENAME}
+  echo gunzip ${GTF_FILENAME}.gz >> ${GTF_FILENAME}
+  """
+}
+
+
+process GENERATE_STAR_INDEX {
   
   input:
-  val id from run_ch.flatten()
+  file fa from ch_fa_index
+  file gtf from ch_gtf_index
   
   output:
-  file "${id}/${id}.sra" into sra_ch
+  path "STAR_index/*" into ch_index
+  
+  script:
+  """
+  STAR --runMode genomeGenerate \
+       --runThreadN 8 \
+       --genomeDir STAR_index \
+       --genomeFastaFiles ${fa} \
+       --sjdbGTFfile ${gtf}  
+  """
+  
+  stub:
+  """
+  mkdir STAR_index
+  ls -lh > STAR_index/SA 
+  echo \
+  STAR --runMode genomeGenerate \
+       --runThreadN 8 \
+       --genomeDir STAR_index \
+       --genomeFastaFiles ${fa} \
+       --sjdbGTFfile ${gtf} >> STAR_index/SA
+  cp STAR_index/SA STAR_index/SAindex
+  cp STAR_index/SA STAR_index/Genome
+  """
+}
+
+
+process DOWNLOAD_SRA_SE {
+  
+  input:
+  val id from ch_se_runs.flatten()
+  
+  output:
+  file "${id}/${id}.sra" into ch_sra_se
   
   script:
   """
@@ -38,41 +146,34 @@ process download_sra {
 }
 
 
-process download_assembly {
+process DOWNLOAD_SRA_PE {
   
-  //publishDir "${REF_DIR}", mode: "move"
-
+  input:
+  val id from ch_pe_runs.flatten()
+  
   output:
-  tuple "${FA_FILENAME}", "${GTF_FILENAME}" into assembly_ch
-  file "${GTF_FILENAME}" into gtf_align_ch
-
+  file "${id}/${id}.sra" into ch_sra_pe
+  
   script:
   """
-  wget ${FA_URL}
-  gunzip ${FA_FILENAME}.gz
-  wget ${GTF_URL}
-  gunzip ${GTF_FILENAME}.gz
+  prefetch ${id}
   """
-
+  
   stub:
   """
-  echo wget ${FA_URL} > ${FA_FILENAME}
-  echo gunzip ${FA_FILENAME}.gz >> ${FA_FILENAME}
-  echo wget ${GTF_URL} > ${GTF_FILENAME}
-  echo gunzip ${GTF_FILENAME}.gz >> ${GTF_FILENAME}
+  mkdir ${id}
+  echo prefetch ${id} > ${id}/${id}.sra
   """
 }
 
 
-process sra_to_fq {
-  
-  //publishDir "${DATA_DIR}/${sra.simpleName}", mode: "move"
+process SRA_TO_FQ_SE {
   
   input:
-  file sra from sra_ch
+  file sra from ch_sra_se
   
   output:
-  file "${sra}.fastq" into fq_ch
+  file "${sra}.fastq" into ch_fq_se
   
   script:
   """
@@ -81,55 +182,41 @@ process sra_to_fq {
   
   stub:
   """
-  ls -lh ${sra} > ${sra}.fastq
+  ls -lh > ${sra}.fastq
   echo fasterq-dump --split-files ${sra} >> ${sra}.fastq
   """
 }
 
 
-process generate_star_index {
-  
-  //publishDir "${REF_DIR}", mode: "move"
+process SRA_TO_FQ_PE {
   
   input:
-  tuple file(fa), file(gtf) from assembly_ch
+  file sra from ch_sra_pe
   
   output:
-  path "STAR_index/*" into index_ch
+  tuple "${sra}_1.fastq", "${sra}_2.fastq" into ch_fq_pe
   
   script:
   """
-  STAR --runMode genomeGenerate \
-       --runThreadN 8 \
-       --genomeDir STAR_index \
-       --genomeFastaFiles ${fa} \
-       --sjdbGTFfile ${gtf}  
+  fasterq-dump --split-files ${sra}
   """
   
   stub:
   """
-  mkdir STAR_index
-  echo \
-  STAR --runMode genomeGenerate \
-       --runThreadN 8 \
-       --genomeDir STAR_index \
-       --genomeFastaFiles ${fa} \
-       --sjdbGTFfile ${gtf} > STAR_index/SA
-  cp STAR_index/SA STAR_index/SAindex
-  cp STAR_index/SA STAR_index/Genome
+  ls -lh > ${sra}_1.fastq
+  echo fasterq-dump --split-files ${sra} >> ${sra}_1.fastq
+  cp ${sra}_1.fastq ${sra}_2.fastq
   """
 }
 
 
-process fastp {
-  
-  //publishDir "${DATA_DIR}/${fq.simpleName}", mode: "move"
+process FASTP_SE {
   
   input:
-  file fq from fq_ch
+  file fq from ch_fq_se
   
   output:
-  file "${fq.simpleName}.trimmed.fastq" into trimmed_fq_ch
+  file "${fq.simpleName}.trimmed.fastq" into ch_tfq_se
   file "${fq.simpleName}-fastp.html"
   file "${fq.simpleName}-fastp.json"
   
@@ -155,36 +242,79 @@ process fastp {
 }
 
 
-process star_align_reads {
-  
-  publishDir "${DATA_DIR}/${tfq.simpleName}", mode: "symlink"
+process FASTP_PE {
   
   input:
-  path index_files from index_ch
-  file gtf from gtf_align_ch
-  file tfq from trimmed_fq_ch
+  tuple file(fq1), file(fq2) from ch_fq_pe
   
   output:
-  file "${tfq.simpleName}_fakeSTARalignRes"
+  tuple "${id}_1.trimmed.fastq", "${id}_2.trimmed.fastq" into ch_tfq_pe
+  file "${id}-fastp.html"
+  file "${id}-fastp.json"
   
   script:
+  id = fq1.simpleName
   """
-  STAR --runMode alignReads --runThreadN 8 --quantMode GeneCounts \
-       --genomeDir STAR_index \
-       --sjdbGTFfile ${gtf} \
-       --outSAMtype BAM SortedByCoordinate \
-       --outReadsUnmapped Fastx \
-       --readFilesIn ${tfq} \
-       --outFileNamePrefix ${tfq.simpleName}_
+  fastp -i ${fq1} \
+        -I ${fq2} \
+        -o ${id}_1.trimmed.fastq \
+        -O ${id}_2.trimmed.fastq \
+        -h ${id}-fastp.html \
+        -j ${id}}-fastp.json
   """
   
   stub:
+  id = fq1.simpleName
+  """
+  ls -lh > ${id}_1.trimmed.fastq
+  echo \
+  fastp -i ${fq1} \
+        -I ${fq2} \
+        -o ${id}_1.trimmed.fastq \
+        -O ${id}_2.trimmed.fastq \
+        -h ${id}-fastp.html \
+        -j ${id}}-fastp.json >> ${id}_1.trimmed.fastq
+  cp ${id}_1.trimmed.fastq ${id}_2.trimmed.fastq
+  cp ${id}_1.trimmed.fastq ${id}-fastp.html
+  cp ${id}_1.trimmed.fastq ${id}-fastp.json
+  """
+}
+
+
+process STAR_ALIGN_SE {
+  
+  publishDir "${OUTDIR}", mode: "symlink"
+  
+  input:
+  path index_files from ch_index
+  file gtf from ch_gtf_align
+  file tfq from ch_tfq_se
+  
+  output:
+  file "${id}_ReadsPerGene.out.tab" into ch_raw_reads_se
+  
+  script:
+  id = tfq.simpleName
   """
   mkdir STAR_index
   mv ${index_files} STAR_index
-  ls -lh > ${tfq.simpleName}_fakeSTARalignRes
-  echo "Now check contents of STAR_index:" >> ${tfq.simpleName}_fakeSTARalignRes
-  ls -lh STAR_index >> ${tfq.simpleName}_fakeSTARalignRes
+  STAR --runMode alignReads --runThreadN 8 --quantMode GeneCounts \
+       --genomeDir STAR_index \
+       --sjdbGTFfile ${gtf} \
+       --readFilesIn ${tfq} \
+       --outSAMtype BAM SortedByCoordinate \
+       --outReadsUnmapped Fastx \
+       --outFileNamePrefix ${id}_
+  """
+  
+  stub:
+  id = tfq.simpleName
+  """
+  mkdir STAR_index
+  mv ${index_files} STAR_index
+  ls -lh > ${id}_ReadsPerGene.out.tab
+  echo "Now check contents of STAR_index:" >> ${id}_ReadsPerGene.out.tab
+  ls -lh STAR_index >> ${id}_ReadsPerGene.out.tab
   echo \
   STAR --runMode alignReads --runThreadN 8 --quantMode GeneCounts \
        --genomeDir STAR_index \
@@ -192,7 +322,56 @@ process star_align_reads {
        --outSAMtype BAM SortedByCoordinate \
        --outReadsUnmapped Fastx \
        --readFilesIn ${tfq} \
-       --outFileNamePrefix ${tfq.simpleName}_ >> ${tfq.simpleName}_fakeSTARalignRes
+       --outFileNamePrefix ${id}_ >> ${id}_ReadsPerGene.out.tab
   """
 }
+
+
+process STAR_ALIGN_PE {
+  
+  publishDir "${OUTDIR}", mode: "symlink"
+  
+  input:
+  path index_files from ch_index
+  file gtf from ch_gtf_align
+  tuple file(tfq1), file(tfq2) from ch_tfq_pe
+  
+  output:
+  file "${id}_ReadsPerGene.out.tab" into ch_raw_reads_pe
+  
+  script:
+  id = tfq1.simpleName.split('_')[0]
+  """
+  mkdir STAR_index
+  mv ${index_files} STAR_index
+  STAR --runMode alignReads --runThreadN 8 --quantMode GeneCounts \
+       --genomeDir STAR_index \
+       --sjdbGTFfile ${gtf} \
+       --readFilesIn ${tfq1} ${tfq2} \
+       --outSAMtype BAM SortedByCoordinate \
+       --outReadsUnmapped Fastx \
+       --outFileNamePrefix ${id}_
+  """
+  
+  stub:
+  id = tfq1.simpleName.split('_')[0]
+  """
+  mkdir STAR_index
+  mv ${index_files} STAR_index
+  ls -lh > ${id}_ReadsPerGene.out.tab
+  echo "Now check contents of STAR_index:" >> ${id}_ReadsPerGene.out.tab
+  ls -lh STAR_index >> ${id}_ReadsPerGene.out.tab
+  echo \
+  STAR --runMode alignReads --runThreadN 8 --quantMode GeneCounts \
+       --genomeDir STAR_index \
+       --sjdbGTFfile ${gtf} \
+       --readFilesIn ${tfq1} ${tfq2} \
+       --outSAMtype BAM SortedByCoordinate \
+       --outReadsUnmapped Fastx \
+       --outFileNamePrefix ${id}_ >> ${id}_ReadsPerGene.out.tab
+  """
+}
+
+
+
 
