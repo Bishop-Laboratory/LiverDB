@@ -151,7 +151,7 @@ for (study_id in unique_studies) {
       pluck("table") %>%
       mutate(
         numerator = numerator,
-        denominator, denominator
+        denominator = denominator
       ) %>% 
       rownames_to_column("gene_id") %>% 
       select(gene_id, numerator, denominator, logFC, FDR)
