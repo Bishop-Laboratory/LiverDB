@@ -6,23 +6,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-OUTDIR = "out"
+OUTDIR = "raw_counts"
 SKIP_EXISTENT = true  // Skip the processing of a run if its run ID exists in OUTDIR
 DELETE_INTERMEDIATES = true  // Delete large intermediate files during workflow
 
 METADATA_CSV = "metadata/metadata.csv"
 
-MAX_RETRIES = 0  // Allow all process instances to retry on fail
+MAX_RETRIES = 3  // Max number of retries on fail for every process instance
 
-STAR_INDEX_THREADS = 16
-STAR_ALIGN_THREADS = 16
+PREFETCH_MAXFORKS   = 2  // Limit parallel prefetch calls so ncbi doesn't get mad
+FASTQ_MAXFORKS      = 8  // Limit parallel calls for RAM/IO constraints
+FASTP_MAXFORKS      = 8
+STAR_ALIGN_MAXFORKS = 6
 
-PREFETCH_SE_MAXFORKS   = 2  // Limit parallel prefetch calls so ncbi doesn't get mad
-PREFETCH_PE_MAXFORKS   = 2
-FASTQ_SE_MAXFORKS      = 3  // Limit parallel fastq-dumps for RAM/IO constraints
-FASTQ_PE_MAXFORKS      = 6
-STAR_ALIGN_SE_MAXFORKS = 2  // Limit parallel STAR alignReads for RAM/IO constraints
-STAR_ALIGN_PE_MAXFORKS = 4
+STAR_GENOME_THREADS = 32
+STAR_ALIGN_THREADS  = 16
 
 FA_URL       = "http://ftp.ensembl.org/pub/release-103/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
 FA_FILENAME  = "Homo_sapiens.GRCh38.dna.primary_assembly.fa"
@@ -36,11 +34,13 @@ GTF_FILENAME = "Homo_sapiens.GRCh38.103.gtf"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// Get run IDs that exist in OUTDIR
+// Get run IDs that exist in OUTDIR, if any
 def existent_ids = []
 fh = new File(OUTDIR)
-fh.eachFile {
-  existent_ids.add(( it =~ /(SRR\d+)/ )[0][1])
+if(fh.exists()) {
+  fh.eachFile {
+    existent_ids.add(( it =~ /(SRR\d+)/ )[0][1])
+  }
 }
 
 // Get sample IDs from metadata.csv
@@ -50,8 +50,8 @@ fh = new File(METADATA_CSV)
 def run_ids = parseCsv(fh.getText('utf-8'))
 
 // Populate list of runs to process
-def se_runs = []
-def pe_runs = []
+def se_runs = []  // IDs of single end runs
+def pe_runs = []  // IDs of paired end runs
 for(line in run_ids) {
   id = line.sample_id
   if(SKIP_EXISTENT && existent_ids.contains(id)) {
@@ -63,9 +63,8 @@ for(line in run_ids) {
   }
 }
 
-// Starting channels
-ch_se_runs = Channel.value(se_runs)
-ch_pe_runs = Channel.value(pe_runs)
+// Starting channel
+ch_runs = Channel.value(se_runs[1..2] + pe_runs[1..2])
 
 
 /*
@@ -80,7 +79,7 @@ process DOWNLOAD_FA {
   maxRetries MAX_RETRIES
 
   output:
-  file "${FA_FILENAME}" into ch_fa_index
+  file "${FA_FILENAME}" into ch_fa
 
   script:
   """
@@ -90,8 +89,7 @@ process DOWNLOAD_FA {
 
   stub:
   """
-  echo wget ${FA_URL} > ${FA_FILENAME}
-  echo gunzip ${FA_FILENAME}.gz >> ${FA_FILENAME}
+  touch ${FA_FILENAME}
   """
 }
 
@@ -102,7 +100,7 @@ process DOWNLOAD_GTF {
   maxRetries MAX_RETRIES
 
   output:
-  file "${GTF_FILENAME}" into ch_gtf_index, ch_gtf_align
+  file "${GTF_FILENAME}" into ch_gtf
 
   script:
   """
@@ -112,20 +110,19 @@ process DOWNLOAD_GTF {
 
   stub:
   """
-  echo wget ${GTF_URL} > ${GTF_FILENAME}
-  echo gunzip ${GTF_FILENAME}.gz >> ${GTF_FILENAME}
+  touch ${GTF_FILENAME}
   """
 }
 
 
-process GENERATE_STAR_INDEX {
+process STAR_GENOME_GENERATE {
   
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
   
   input:
-  file fa from ch_fa_index
-  file gtf from ch_gtf_index
+  file fa from ch_fa
+  file gtf from ch_gtf
   
   output:
   path "STAR_index/*" into ch_index
@@ -133,7 +130,7 @@ process GENERATE_STAR_INDEX {
   script:
   """
   STAR --runMode genomeGenerate \
-       --runThreadN ${STAR_INDEX_THREADS} \
+       --runThreadN ${STAR_GENOME_THREADS} \
        --genomeDir STAR_index \
        --genomeFastaFiles ${fa} \
        --sjdbGTFfile ${gtf}  
@@ -142,30 +139,24 @@ process GENERATE_STAR_INDEX {
   stub:
   """
   mkdir STAR_index
-  ls -lh > STAR_index/SA 
-  echo \
-  STAR --runMode genomeGenerate \
-       --runThreadN ${STAR_INDEX_THREADS} \
-       --genomeDir STAR_index \
-       --genomeFastaFiles ${fa} \
-       --sjdbGTFfile ${gtf} >> STAR_index/SA
+  ls > STAR_index/SA
   cp STAR_index/SA STAR_index/SAindex
   cp STAR_index/SA STAR_index/Genome
   """
 }
 
 
-process DOWNLOAD_SRA_SE {
+process PREFETCH {
   
-  maxForks PREFETCH_SE_MAXFORKS
+  maxForks PREFETCH_MAXFORKS
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
   
   input:
-  val id from ch_se_runs.flatten()
+  val id from ch_runs.flatten()
   
   output:
-  file "${id}/${id}.sra" into ch_sra_se
+  file "${id}/${id}.sra" into ch_sra
   
   script:
   """
@@ -175,192 +166,130 @@ process DOWNLOAD_SRA_SE {
   stub:
   """
   mkdir ${id}
-  echo prefetch ${id} > ${id}/${id}.sra
+  touch ${id}/${id}.sra
   """
 }
 
 
-process DOWNLOAD_SRA_PE {
+process FASTQ {
   
-  maxForks PREFETCH_PE_MAXFORKS
+  maxForks FASTQ_MAXFORKS
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
   
   input:
-  val id from ch_pe_runs.flatten()
+  file sra from ch_sra
   
   output:
-  file "${id}/${id}.sra" into ch_sra_pe
+  file "${id}_{1,2}.fastq" into ch_fq
   
   script:
-  """
-  prefetch ${id}
-  """
-  
-  stub:
-  """
-  mkdir ${id}
-  echo prefetch ${id} > ${id}/${id}.sra
-  """
-}
-
-
-process FASTQ_SE {
-  
-  maxForks FASTQ_SE_MAXFORKS
-  errorStrategy 'retry'
-  maxRetries MAX_RETRIES
-  
-  input:
-  file sra from ch_sra_se
-  
-  output:
-  file "${sra.simpleName}_1.fastq" into ch_fq_se
-  
-  script:
+  id = sra.simpleName
   """
   fastq-dump --split-files ${sra}
   """
   
   stub:
-  """
-  ls -lh > ${sra.simpleName}_1.fastq
-  echo fastq-dump --split-files ${sra.simpleName}_1 >> ${sra.simpleName}_1.fastq
-  """
+  id = sra.simpleName
+  if(se_runs.contains(id))
+    """
+    ls > ${id}_1.fastq
+    """
+  else
+    """
+    ls > ${id}_1.fastq
+    cp ${id}_1.fastq ${id}_2.fastq
+    """
 }
 
 
-process FASTQ_PE {
+process FASTP {
   
-  maxForks FASTQ_PE_MAXFORKS
+  maxForks FASTP_MAXFORKS
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
   
   input:
-  file sra from ch_sra_pe
+  file fq from ch_fq
   
   output:
-  tuple "${sra.simpleName}_1.fastq", "${sra.simpleName}_2.fastq" into ch_fq_pe
+  file "${id}_{1,2}.trimmed.fastq" into ch_tfq
   
   script:
-  """
-  fastq-dump --split-files ${sra}
-  """
+  if(!(fq instanceof List)) {  // handle single end
+    id = fq.simpleName.split("_")[0]
+    """
+    fastp -i ${fq} \
+          -o ${id}_1.trimmed.fastq
+    
+    if ${DELETE_INTERMEDIATES}; then
+      readlink ${fq} | xargs rm --
+      rm ${fq}
+    fi
+    """
+  } else {  // handle paired end
+    id = fq[0].simpleName.split("_")[0]
+    """
+    fastp -i ${fq[0]} \
+          -I ${fq[1]} \
+          -o ${id}_1.trimmed.fastq \
+          -O ${id}_2.trimmed.fastq
+    
+    if ${DELETE_INTERMEDIATES}; then
+      readlink ${fq} | xargs rm --
+      rm ${fq}
+    fi
+    """
+  }
   
   stub:
-  """
-  ls -lh > ${sra.simpleName}_1.fastq
-  echo fastq-dump --split-files ${sra.simpleName} >> ${sra.simpleName}_1.fastq
-  cp ${sra.simpleName}_1.fastq ${sra.simpleName}_2.fastq
-  """
+  if(!(fq instanceof List)) {  // handle single end
+    id = fq.simpleName.split("_")[0]
+    """
+    ls > ${id}_1.trimmed.fastq
+    
+    if ${DELETE_INTERMEDIATES}; then
+      readlink ${fq} | xargs rm --
+      rm ${fq}
+    fi
+    """
+  } else {  // handle paired end
+    id = fq[0].simpleName.split("_")[0]
+    """
+    ls > ${id}_1.trimmed.fastq
+    cp ${id}_1.trimmed.fastq ${id}_2.trimmed.fastq
+    
+    if ${DELETE_INTERMEDIATES}; then
+      readlink ${fq} | xargs rm --
+      rm ${fq}
+    fi
+    """
+  }
 }
 
 
-process FASTP_SE {
-  
-  errorStrategy 'retry'
-  maxRetries MAX_RETRIES
-  
-  input:
-  file fq from ch_fq_se
-  
-  output:
-  file "${fq.simpleName}.trimmed.fastq" into ch_tfq_se
-  
-  script:
-  id = fq.simpleName.split("_")[0]
-  """
-  fastp -i ${fq} \
-        -o ${id}.trimmed.fastq
-
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${fq} | xargs rm --
-    rm ${fq}  
-  fi
-  """
-  
-  stub:
-  id = fq.simpleName.split("_")[0]
-  """
-  ls -lh ${fq} > ${fq.simpleName}.trimmed.fastq
-  echo \
-  fastp -i ${fq} \
-        -o ${id}.trimmed.fastq >> ${fq.simpleName}.trimmed.fastq
-
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${fq} | xargs rm --
-    rm ${fq}  
-  fi
-  """
-}
-
-
-process FASTP_PE {
-  
-  errorStrategy 'retry'
-  maxRetries MAX_RETRIES
-  
-  input:
-  tuple file(fq1), file(fq2) from ch_fq_pe
-  
-  output:
-  tuple "${id}_1.trimmed.fastq", "${id}_2.trimmed.fastq" into ch_tfq_pe
-  
-  script:
-  id = fq1.simpleName.split("_")[0]
-  """
-  fastp -i ${fq1} \
-        -I ${fq2} \
-        -o ${id}_1.trimmed.fastq \
-        -O ${id}_2.trimmed.fastq
-        
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${fq1} | xargs rm --
-    rm ${fq1}
-    readlink ${fq2} | xargs rm --
-    rm ${fq2} 
-  fi
-  """
-  
-  stub:
-  id = fq1.simpleName.split("_")[0]
-  """
-  ls -lh > ${id}_1.trimmed.fastq
-  echo \
-  fastp -i ${fq1} \
-        -I ${fq2} \
-        -o ${id}_1.trimmed.fastq \
-        -O ${id}_2.trimmed.fastq  >> ${id}_1.trimmed.fastq
-  cp ${id}_1.trimmed.fastq ${id}_2.trimmed.fastq
-  
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${fq1} | xargs rm --
-    rm ${fq1}
-    readlink ${fq2} | xargs rm --
-    rm ${fq2} 
-  fi
-  """
-}
-
-
-process STAR_ALIGN_SE {
+process STAR_ALIGN_READS {
   
   publishDir "${OUTDIR}", mode: "symlink"
   
-  maxForks STAR_ALIGN_SE_MAXFORKS
+  maxForks STAR_ALIGN_MAXFORKS
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
   
   input:
   path index_files from ch_index
-  file gtf from ch_gtf_align
-  file tfq from ch_tfq_se
+  file gtf from ch_gtf
+  file tfq from ch_tfq
   
   output:
-  file "${id}_ReadsPerGene.out.tab"
+  file "${id}_ReadsPerGene.out.tab" into raw_counts
   
   script:
-  id = tfq.simpleName.split("_")[0]
+  if(!(tfq instanceof List)) {
+    id = tfq.simpleName.split("_")[0]
+  } else {
+    id = tfq[0].simpleName.split("_")[0]
+  }
   """
   mkdir STAR_index
   mv ${index_files} STAR_index
@@ -382,98 +311,21 @@ process STAR_ALIGN_SE {
   """
   
   stub:
-  id = tfq.simpleName.split("_")[0]
+  if(!(tfq instanceof List)) {
+    id = tfq.simpleName.split("_")[0]
+  } else {
+    id = tfq[0].simpleName.split("_")[0]
+  }
   """
   mkdir STAR_index
   mv ${index_files} STAR_index
-  ls -lh > ${id}_ReadsPerGene.out.tab
-  echo "Now check contents of STAR_index:" >> ${id}_ReadsPerGene.out.tab
-  ls -lh STAR_index >> ${id}_ReadsPerGene.out.tab
-  echo \
-  STAR --runMode alignReads \
-       --runThreadN ${STAR_ALIGN_THREADS} \
-       --quantMode GeneCounts \
-       --genomeDir STAR_index \
-       --sjdbGTFfile ${gtf} \
-       --outSAMtype BAM SortedByCoordinate \
-       --outReadsUnmapped Fastx \
-       --readFilesIn ${tfq} \
-       --outFileNamePrefix ${id}_ >> ${id}_ReadsPerGene.out.tab
-       
+  ls > ${id}_ReadsPerGene.out.tab
+
   if ${DELETE_INTERMEDIATES}; then
     readlink ${tfq} | xargs rm --
     rm ${tfq}
   fi
   """
 }
-
-
-process STAR_ALIGN_PE {
-  
-  publishDir "${OUTDIR}", mode: "symlink"
-  
-  maxForks STAR_ALIGN_PE_MAXFORKS
-  errorStrategy 'retry'
-  maxRetries MAX_RETRIES
-  
-  input:
-  path index_files from ch_index
-  file gtf from ch_gtf_align
-  tuple file(tfq1), file(tfq2) from ch_tfq_pe
-  
-  output:
-  file "${id}_ReadsPerGene.out.tab"
-  
-  script:
-  id = tfq1.simpleName.split('_')[0]
-  """
-  mkdir STAR_index
-  mv ${index_files} STAR_index
-  STAR --runMode alignReads \
-       --runThreadN ${STAR_ALIGN_THREADS} \
-       --quantMode GeneCounts \
-       --genomeDir STAR_index \
-       --sjdbGTFfile ${gtf} \
-       --readFilesIn ${tfq1} ${tfq2} \
-       --outSAMtype BAM SortedByCoordinate \
-       --outReadsUnmapped Fastx \
-       --outFileNamePrefix ${id}_
-       
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${tfq1} | xargs rm --
-    readlink ${tfq2} | xargs rm --
-    rm ${tfq1} ${tfq2}
-    rm *_Aligned.sortedByCoord.out.bam
-  fi
-  """
-  
-  stub:
-  id = tfq1.simpleName.split('_')[0]
-  """
-  mkdir STAR_index
-  mv ${index_files} STAR_index
-  ls -lh > ${id}_ReadsPerGene.out.tab
-  echo "Now check contents of STAR_index:" >> ${id}_ReadsPerGene.out.tab
-  ls -lh STAR_index >> ${id}_ReadsPerGene.out.tab
-  echo \
-  STAR --runMode alignReads \
-       --runThreadN ${STAR_ALIGN_THREADS} \
-       --quantMode GeneCounts \
-       --genomeDir STAR_index \
-       --sjdbGTFfile ${gtf} \
-       --readFilesIn ${tfq1} ${tfq2} \
-       --outSAMtype BAM SortedByCoordinate \
-       --outReadsUnmapped Fastx \
-       --outFileNamePrefix ${id}_ >> ${id}_ReadsPerGene.out.tab
-       
-  if ${DELETE_INTERMEDIATES}; then
-    readlink ${tfq1} | xargs rm --
-    readlink ${tfq2} | xargs rm --
-    rm ${tfq1} ${tfq2}
-  fi
-  """
-}
-
-
 
 
