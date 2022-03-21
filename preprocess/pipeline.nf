@@ -7,6 +7,8 @@
 */
 
 OUTDIR = "raw_counts"
+REFS_OUTDIR = "refs"
+
 SKIP_EXISTENT = true  // Skip the processing of a run if its run ID exists in OUTDIR
 DELETE_INTERMEDIATES = true  // Delete large intermediate files during workflow
 
@@ -75,6 +77,8 @@ ch_runs = Channel.value(se_runs[1..2] + pe_runs[1..2])
 
 process DOWNLOAD_FA {
   
+  publishDir "${REFS_OUTDIR}", mode: "symlink"
+  
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
 
@@ -95,6 +99,8 @@ process DOWNLOAD_FA {
 
 
 process DOWNLOAD_GTF {
+  
+  publishDir "${REFS_OUTDIR}", mode: "symlink"
   
   errorStrategy 'retry'
   maxRetries MAX_RETRIES
