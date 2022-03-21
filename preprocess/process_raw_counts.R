@@ -1,11 +1,12 @@
 # This R script requires:
 #
+# - Working directory is the same as the location of this script
 # - GTF_FILE refers to a valid .gtf file
 # - COUNTS_DIR directory populated with raw counts files for all samples
 #   listed in METADATA_CSV
-#
-# A successful run of the Nextflow script "pipeline.nf" will generate these
-# requirements.
+# 
+# A successful run of the Nextflow script "pipeline.nf" will generate the file
+# requirements above.
 
 #-------------------------------------------------------------------------------
 # LIBRARIES
@@ -25,8 +26,8 @@ GTF_FILE <- "refs/Homo_sapiens.GRCh38.103.gtf"
 METADATA_CSV <- "metadata/metadata.csv"
 CONTRASTS_CSV <- "metadata/contrasts.csv"
 
-EXP_CSV_SUFFIX <- "_gene_exp.csv"
-DEG_CSV_SUFFIX <- "_degs.csv"
+EXP_OUTFILE_SUFFIX <- "_gene_exp.csv.gz"
+DEG_OUTFILE_SUFFIX <- "_degs.csv.gz"
 
 
 #-------------------------------------------------------------------------------
@@ -61,9 +62,12 @@ gene_lengths <- GenomicFeatures::transcriptsBy(txdb, "gene") %>%
   GenomicRanges::width() %>%
   sum()
 
-# For each unique study, generate expression level and DEG .csv files
+# For each unique study, generate expression level and DEG .csv.gz files
 unique_studies <- metadata %>% distinct(study_id) %>% pull()
 for (study_id in unique_studies) {
+  exp_filename <- paste0(study_id, EXP_OUTFILE_SUFFIX)
+  deg_filename <- paste0(study_id, DEG_OUTFILE_SUFFIX)
+  
   # Filter samples relevant to current study
   samples <- metadata %>% filter(study_id == !!study_id) %>% pull(sample_id)
   study_counts <- all_counts[str_extract(all_counts, "SRR\\d+") %in% samples]
@@ -84,7 +88,7 @@ for (study_id in unique_studies) {
   }) %>%
     bind_rows() %>%
     pivot_wider(names_from = sample_id, values_from = counts) %>%
-    column_to_rownames(var="gene_id") %>%
+    column_to_rownames("gene_id") %>%
     as.matrix()
   
   # Compute CPM, RPKM and TPM
@@ -100,15 +104,15 @@ for (study_id in unique_studies) {
     mat_longify() %>%
     rename(sample_id = name, rpkm = value)
 
-  tpms <- tpm_from_rpkm(rpkms_mat) %>%
+  tpms <- rpkm_to_tpm(rpkms_mat) %>%
     mat_longify() %>%
     rename(sample_id = name, tpm = value)
   
-  # Write CPM, RPKM and TPM to .csv
+  # Write CPM, RPKM and TPM to .csv.gz
   cpms %>% 
     inner_join(rpkms, by = c("gene_id", "sample_id")) %>% 
     inner_join(tpms, by = c("gene_id", "sample_id")) %>% 
-    write_csv(paste0(study_id, EXP_CSV_SUFFIX))
+    write_csv(exp_filename)
   
   # Remove large unneeded R objects and free up some memory
   rm(cpms, rpkms, rpkms_mat, tpms)
@@ -119,7 +123,7 @@ for (study_id in unique_studies) {
   study_contrasts <- all_contrasts %>%
     filter(study_id == !!study_id)
   
-  # Get DEGs for each contrast and write to .csv
+  # Get DEGs for each contrast and write to .csv.gz
   apply(study_contrasts, 1, function(x) {
     # Define current contrast
     numerator <-  x[["numerator"]]
@@ -157,7 +161,7 @@ for (study_id in unique_studies) {
       select(gene_id, numerator, denominator, logFC, FDR)
   }) %>% 
     bind_rows() %>% 
-    write_csv(paste0(study_id, DEG_CSV_SUFFIX))
+    write_csv(deg_filename)
   
   # Remove large unneeded R objects and free up some memory
   rm(mat)
