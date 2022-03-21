@@ -66,7 +66,7 @@ for(line in run_ids) {
 }
 
 // Starting channel
-ch_runs = Channel.value(se_runs[1..2] + pe_runs[1..2])
+ch_runs = Channel.value(se_runs + pe_runs)
 
 
 /*
