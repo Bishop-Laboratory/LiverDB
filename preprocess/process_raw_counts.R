@@ -1,6 +1,6 @@
 # This R script requires:
 #
-# - Working directory is the same as the location of this script
+# - getwd() is the same as the location of this script
 # - GTF_FILE refers to a valid .gtf file
 # - COUNTS_DIR directory populated with raw counts files for all samples
 #   listed in METADATA_CSV
@@ -19,6 +19,7 @@ library(tidyverse)
 #-------------------------------------------------------------------------------
 
 COUNTS_DIR <- "raw_counts"
+COUNTS_SUFFIX <- "_ReadsPerGene.out.tab"
 COUNTS_SKIP_LINES <- 4
 
 GTF_FILE <- "refs/Homo_sapiens.GRCh38.103.gtf"
@@ -51,7 +52,6 @@ rpkm_to_tpm <- function(x){
 # MAIN SCRIPT
 #-------------------------------------------------------------------------------
 
-all_counts <- list.files(COUNTS_DIR)
 metadata <- read_csv(METADATA_CSV)
 all_contrasts <- read_csv(CONTRASTS_CSV)
 
@@ -62,21 +62,19 @@ gene_lengths <- GenomicFeatures::transcriptsBy(txdb, "gene") %>%
   GenomicRanges::width() %>%
   sum()
 
-# For each unique study, generate expression level and DEG .csv.gz files
+# For each unique study, generate .csv.gz files for CPM/RKPM/TPM and DEGs
 unique_studies <- metadata %>% distinct(study_id) %>% pull()
 for (study_id in unique_studies) {
   exp_filename <- paste0(study_id, EXP_OUTFILE_SUFFIX)
   deg_filename <- paste0(study_id, DEG_OUTFILE_SUFFIX)
   
-  # Filter samples relevant to current study
+  # Filter sample IDs list relevant to current study
   samples <- metadata %>% filter(study_id == !!study_id) %>% pull(sample_id)
-  study_counts <- all_counts[str_extract(all_counts, "SRR\\d+") %in% samples]
   
   # Build raw count matrix
-  mat <- lapply(study_counts, function(x) {
-    sample_id <- str_extract(x, "SRR\\d+")
-    strand <- metadata$stranded[metadata$sample_id == sample_id]
-    count_path <- file.path(COUNTS_DIR, x)
+  mat <- lapply(samples, function(id) {
+    strand <- metadata %>% filter(sample_id == id) %>% pull(stranded)
+    count_path <- file.path(COUNTS_DIR, paste0(id, COUNTS_SUFFIX))
     
     read_tsv(count_path,
       skip = COUNTS_SKIP_LINES, 
@@ -84,14 +82,14 @@ for (study_id in unique_studies) {
     ) %>%
       select(gene_id, contains(!!strand)) %>%
       rename(counts = contains(!!strand)) %>%
-      mutate(sample_id = !!sample_id)
+      mutate(sample_id = id)
   }) %>%
     bind_rows() %>%
     pivot_wider(names_from = sample_id, values_from = counts) %>%
     column_to_rownames("gene_id") %>%
     as.matrix()
   
-  # Compute CPM, RPKM and TPM
+  # Compute CPM, RPKM, TPM
   cpms <- mat %>%
     DGEList() %>%
     calcNormFactors() %>%
