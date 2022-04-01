@@ -141,9 +141,7 @@ Expression_panel <- function() {
     fluidRow(
       column(
         width = 12,
-        plotly::plotlyOutput(
-          outputId = "countplot", height = "500px"
-        )
+        plotly::plotlyOutput(outputId = "countplot", height = "500px")
       )
     )
   )
