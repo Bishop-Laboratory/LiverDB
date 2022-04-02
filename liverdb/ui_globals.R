@@ -107,7 +107,7 @@ OutputPanel_tabset <- function() {
       tabPanel(
         title = "Comparison",
         icon=icon("adjust"),
-        Venn_panel()
+        Upset_panel()
       )
     )
   )
@@ -202,10 +202,10 @@ Enrich_panel <- function() {
       column(
         width = 12,
         selectInput(
-          inputId = "selectCB",
+          inputId = "selectEM",
           choices = c("Combined.Score", "Odds.Ratio", "Padj (-log10)"),
           selected = "Combined.Score", 
-          label = "Enrichment metric"
+          label = "Enrichment Metric"
         )
       )
     ),
@@ -222,7 +222,7 @@ Enrich_panel <- function() {
 }
 
 
-Venn_panel <- function() {
+Upset_panel <- function() {
   list(
     fluidRow(
       column(
@@ -230,7 +230,7 @@ Venn_panel <- function() {
         hr(),
         makeHeaders(
           title = "DEG comparison ",
-          message=paste0("Venn diagram comparing over- and under-expressed genes between studies.")
+          message=paste0("UpSet plot comparing over- and under-expressed genes between studies.")
         ),
         hr()
       )
@@ -239,7 +239,7 @@ Venn_panel <- function() {
       column(
         width = 12,
         selectInput(
-          inputId = "vennsel",
+          inputId = "upsetSelect",
           choices = c("Over-expressed", "Under-expressed"),
           selected = "Over-expressed", 
           label = "DEG type"
@@ -250,7 +250,7 @@ Venn_panel <- function() {
       column(
         width = 12,
         plotOutput(
-          outputId = "vennDiagram", height = "500px"
+          outputId = "upset", height = "500px"
         )
       )
     ),

@@ -22,6 +22,8 @@ GEO_BASE <- "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="
 GENECARDS_BASE <- "https://www.genecards.org/cgi-bin/carddisp.pl?gene="
 
 app_data <- readRDS("app_data.rds")
+eres <- readRDS("eres.rds")
+
 exps <- app_data[["exps"]]
 degs <- app_data[["degs"]]
 metadata <- app_data[["metadata"]]
@@ -187,6 +189,7 @@ server <- function(input, output, session) {
   
   # Volcano plot
   output$volcanoPlot <- renderPlot({
+    req(input$selectStudy, input$selectContrast, current_gene())
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
     gene <- current_gene()
@@ -206,7 +209,7 @@ server <- function(input, output, session) {
         ),
         padj = -log10(padj),
         sigcond = case_when(
-          padj < 3 ~ "n.s.",
+          padj < 2 ~ "n.s.",
           abs(fc) < 1 ~ "sig-only",
           fc > 1 ~ "Over-expressed",
           fc < -1 ~ "Under-expressed"
@@ -295,8 +298,78 @@ server <- function(input, output, session) {
     
     plt
   })
-
   
+  # Enrichr results
+  output$enrichPlot <- renderPlot({
+    req(input$selectStudy, input$selectContrast, input$selectEM)
+    study <- input$selectStudy
+    pair <- strsplit(input$selectContrast, " vs. ")[[1]]
+    colby <- input$selectEM
+    
+    plot_title <- paste0(pair[1], " vs. ", pair[2])
+    eres_group <- paste0(study, "_", pair[1], "_", pair[2])
+    
+    pltdat <- eres[[eres_group]]
+    
+    topick <- pltdat %>% 
+      group_by(group) %>% 
+      slice_max(Combined.Score, n = 10) %>% pull(Term)
+    
+    pltdat %>% 
+      dplyr::filter(Term %in% topick) %>% 
+      mutate(
+        `Padj (-log10)`=-log10(Adjusted.P.value)
+      ) %>% 
+      rename(
+        colby = contains(colby)
+      ) %>% 
+      pivot_wider(
+        id_cols = Term, names_from = group, 
+        values_from = colby,
+        values_fill = 0
+      ) %>% 
+      column_to_rownames("Term") %>% 
+      as.matrix() %>% 
+      pheatmap(
+        # scale = "col",
+        angle_col = "45",
+        name = colby,
+        main = plot_title
+      )
+  })
+
+  # Comparison
+  output$upset <- renderPlot({
+    req(input$upsetSelect)
+    deg_type <- input$upsetSelect
+    studies <- metadata %>% pull(study_id) %>% unique()
+    
+    tolist <- lapply(studies, function(study) {
+      degs[[study]] %>%
+        dplyr::filter(!is.na(FDR) & FDR < .01 & abs(logFC) > 1) %>%
+        mutate(
+          group = case_when(
+            logFC > 0 ~ "Over-expressed",
+            TRUE ~ "Under-expressed"
+          ),
+          set_name = paste0(study, "\n", numerator, " vs. ", denominator)
+        ) %>%
+        dplyr::filter(group == deg_type) %>% 
+        select(gene_name, set_name)
+    }) %>% bind_rows()
+    
+    all_set_names <- tolist %>% pull(set_name) %>% unique()
+    names(all_set_names) <- all_set_names
+    set2genes <- lapply(all_set_names, function(set_name){
+      tolist %>% 
+        dplyr::filter(set_name == !!set_name) %>% 
+        pull(gene_name)
+    })
+    
+    m <- make_comb_mat(set2genes)
+    
+    UpSet(m, row_names_gp = grid::gpar(fontsize = 10))
+  })
   
   
 }
@@ -305,6 +378,21 @@ server <- function(input, output, session) {
 #-------------------------------------------------------------------------------
 # SCRATCH ZONE
 #-------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
