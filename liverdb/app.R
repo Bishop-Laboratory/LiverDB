@@ -280,21 +280,33 @@ server <- function(input, output, session) {
     annot <- topvt %>% 
       dplyr::select(sample_id, condition) %>% 
       unique() %>% 
-      column_to_rownames("sample_id")
+      column_to_rownames("sample_id") %>%
+      mutate(condition = case_when(  # Combine NAFLD if selected
+        pair[1] == "NAFLD" & grepl("NAFLD", condition) ~ "NALFD",
+        TRUE ~ condition
+      ))
     
-    plt <- pivot_wider(  
+    mat <- pivot_wider(  
       data = topvt,
       id_cols = gene_name, names_from = sample_id, values_from = counts
     ) %>% 
       column_to_rownames("gene_name") %>% 
-      as.matrix() %>% 
-      pheatmap(
-        scale = "row",
-        angle_col = "45",
-        annotation_col = annot,
-        name = cts_sel,
-        main = plot_title
-      )
+      as.matrix()
+    
+    req(dim(mat)[1] != 0)
+    
+    ann_colors <- c("red", "blue")
+    names(ann_colors) <- annot %>% pull(condition) %>% unique()
+    ann_colors <- list(condition = ann_colors)
+    
+    plt <- pheatmap(mat,
+      scale = "row",
+      angle_col = "45",
+      annotation_col = annot,
+      annotation_colors = ann_colors,
+      name = cts_sel,
+      main = plot_title
+    )
     
     plt
   })
@@ -311,11 +323,13 @@ server <- function(input, output, session) {
     
     pltdat <- eres[[eres_group]]
     
+    req(pltdat)
+    
     topick <- pltdat %>% 
       group_by(group) %>% 
       slice_max(Combined.Score, n = 10) %>% pull(Term)
     
-    pltdat %>% 
+    mat <- pltdat %>% 
       dplyr::filter(Term %in% topick) %>% 
       mutate(
         `Padj (-log10)`=-log10(Adjusted.P.value)
@@ -329,13 +343,16 @@ server <- function(input, output, session) {
         values_fill = 0
       ) %>% 
       column_to_rownames("Term") %>% 
-      as.matrix() %>% 
-      pheatmap(
-        # scale = "col",
-        angle_col = "45",
-        name = colby,
-        main = plot_title
-      )
+      as.matrix()
+    
+    req(dim(mat)[1] != 0)
+    
+    pheatmap(mat,
+      # scale = "col",
+      angle_col = "45",
+      name = colby,
+      main = plot_title
+    )
   })
 
   # Comparison
@@ -376,30 +393,9 @@ server <- function(input, output, session) {
 
 
 #-------------------------------------------------------------------------------
-# SCRATCH ZONE
-#-------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#-------------------------------------------------------------------------------
 # LAUNCH APP
 #-------------------------------------------------------------------------------
 
+# Might need: options(repos = BiocManager::repositories())
 shinyApp(ui, server)
 

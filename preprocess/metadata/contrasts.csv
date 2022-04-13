@@ -1,7 +1,7 @@
 study_id,numerator,denominator
-GSE126848,Obese,Healthy
 GSE126848,NAFL,Healthy
 GSE126848,NASH,Healthy
+GSE126848,Obese,Healthy
 GSE126848,Obese,NAFL
 GSE126848,Obese,NASH
 GSE126848,NAFL,NASH
