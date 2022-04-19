@@ -395,10 +395,10 @@ headerHTML <- function() {
 footerHTML <- function() {
     "
     <footer class='footer'>
-      <div class='footer-copyright text-center py-3'><span style='color:white'>FibroDB © 2021 Copyright:</span>
+      <div class='footer-copyright text-center py-3'><span style='color:white'>LiverDB © 2022 Copyright:</span>
         <a href='http://heartlncrna.github.io/' target='_blank'>heartlncrna</a> 
         <span>&nbsp</span>
-        <a href='https://github.com/Bishop-Laboratory/FibroDB/' target='_blank'> 
+        <a href='https://github.com/Bishop-Laboratory/LiverDB/' target='_blank'> 
           <img src='GitHub-Mark-Light-64px.png' height='20'>
         </a>
       </div>
