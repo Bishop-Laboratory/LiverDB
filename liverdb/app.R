@@ -29,6 +29,11 @@ degs <- app_data[["degs"]]
 metadata <- app_data[["metadata"]]
 deg_contrasts <- app_data[["contrasts"]]
 
+print("mem used start")
+print(lobstr::mem_used() / 1e6)
+
+
+
 #-------------------------------------------------------------------------------
 # UI
 #-------------------------------------------------------------------------------
@@ -90,6 +95,13 @@ ui <- function(request) {
 #-------------------------------------------------------------------------------
 
 server <- function(input, output, session) {
+  
+  # Print memory usage to console every 2000ms
+  observe({
+    invalidateLater(2000, session)
+    print(lobstr::mem_used() / 1e6)
+  },
+  priority = 1000)
   
   # Reactive link to study
   output$studyLink <- renderUI({
@@ -161,14 +173,16 @@ server <- function(input, output, session) {
   
   # Expression plot
   output$countplot <- plotly::renderPlotly({
-    req(input$selectStudy, input$selectCTS, current_gene())
+    print(paste0("expression"))
+    
+    req(input$selectStudy, current_gene())
     study <- input$selectStudy
-    cts_sel <- input$selectCTS
     gene <- current_gene()
 
     plt <- exps[[study]] %>%
       dplyr::filter(gene_name == gene) %>% 
-      rename(expression = tolower(cts_sel)) %>% 
+      pivot_longer(!gene_name, names_to = "sample_id", values_to = "tpm") %>% 
+      rename(expression = "tpm") %>% 
       left_join(
         metadata %>% select(sample_id, condition),
         by = c("sample_id")
@@ -179,7 +193,7 @@ server <- function(input, output, session) {
       geom_boxplot(width = .65, alpha = .6, outlier.shape = NA) +
       geom_jitter(width = .15) +
       xlab("Conditions of Samples") +
-      ylab(paste0("Expression (", cts_sel, ")")) +
+      ylab(paste0("Expression (TPM)")) +
       theme_gray(base_size = 13) +
       ggtitle(gene) +
       theme(legend.position = "none")
@@ -189,6 +203,7 @@ server <- function(input, output, session) {
   
   # Volcano plot
   output$volcanoPlot <- renderPlot({
+    print(paste0("volcano"))
     req(input$selectStudy, input$selectContrast, current_gene())
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
@@ -245,10 +260,10 @@ server <- function(input, output, session) {
   
   # Heatmap
   output$heatmap <- renderPlot({
-    req(input$selectStudy, input$selectContrast, input$selectCTS2)
+    print(paste0("heatmap"))
+    req(input$selectStudy, input$selectContrast)
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
-    cts_sel <- input$selectCTS2
     
     toplt <- degs[[study]] %>% 
       rename(padj = FDR, fc = logFC)
@@ -270,7 +285,8 @@ server <- function(input, output, session) {
     
     topvt <- exps[[study]] %>%
       dplyr::filter(gene_name %in% g2plt) %>% 
-      rename(counts = tolower(cts_sel)) %>% 
+      pivot_longer(!gene_name, names_to = "sample_id", values_to = "tpm") %>% 
+      rename(counts = "tpm") %>% 
       left_join(
         metadata %>% select(sample_id, condition),
         by = c("sample_id")
@@ -304,7 +320,7 @@ server <- function(input, output, session) {
       angle_col = "45",
       annotation_col = annot,
       annotation_colors = ann_colors,
-      name = cts_sel,
+      name = "TPM",
       main = plot_title
     )
     
@@ -313,6 +329,7 @@ server <- function(input, output, session) {
   
   # Enrichr results
   output$enrichPlot <- renderPlot({
+    print(paste0("enrichr"))
     req(input$selectStudy, input$selectContrast, input$selectEM)
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
@@ -357,6 +374,7 @@ server <- function(input, output, session) {
 
   # Comparison
   output$upset <- renderPlot({
+    print(paste0("upset"))
     req(input$upsetSelect)
     deg_type <- input$upsetSelect
     studies <- metadata %>% pull(study_id) %>% unique()

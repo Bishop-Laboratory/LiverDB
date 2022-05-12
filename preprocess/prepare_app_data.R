@@ -58,6 +58,8 @@ degs <- lapply(study_ids, function(id) {
 exps <- lapply(study_ids, function(id) {
   filename <- paste0(id, EXP_SUFFIX)
   read_csv(filename) %>% 
+    select(gene_id, sample_id, tpm) %>% 
+    pivot_wider(names_from = sample_id, values_from = tpm) %>% 
     inner_join(ens2sym, by = c("gene_id")) %>% 
     relocate(gene_name) %>% 
     select(-gene_id)
