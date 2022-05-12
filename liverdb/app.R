@@ -22,16 +22,15 @@ GEO_BASE <- "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="
 GENECARDS_BASE <- "https://www.genecards.org/cgi-bin/carddisp.pl?gene="
 
 app_data <- readRDS("app_data.rds")
-eres <- readRDS("eres.rds")
 
 exps <- app_data[["exps"]]
 degs <- app_data[["degs"]]
 metadata <- app_data[["metadata"]]
 deg_contrasts <- app_data[["contrasts"]]
+eres <- app_data[["eres"]]
 
-print("mem used start")
+print("Mem used at start:")
 print(lobstr::mem_used() / 1e6)
-
 
 
 #-------------------------------------------------------------------------------
@@ -51,9 +50,9 @@ ui <- function(request) {
     ),
     use_prompt(),
     navbarPage(
-      title = "FibroDB",
-      id = "fibrodb",
-      theme = bslib::bs_theme(bootswatch = "cosmo"),
+      title = "LiverDB",
+      id = "liverdb",
+      theme = bslib::bs_theme(bootswatch = "lumen"),
       tabPanel(
         title = "Home",
         id = "home-tab",
@@ -173,8 +172,6 @@ server <- function(input, output, session) {
   
   # Expression plot
   output$countplot <- plotly::renderPlotly({
-    print(paste0("expression"))
-    
     req(input$selectStudy, current_gene())
     study <- input$selectStudy
     gene <- current_gene()
@@ -203,7 +200,6 @@ server <- function(input, output, session) {
   
   # Volcano plot
   output$volcanoPlot <- renderPlot({
-    print(paste0("volcano"))
     req(input$selectStudy, input$selectContrast, current_gene())
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
@@ -260,7 +256,6 @@ server <- function(input, output, session) {
   
   # Heatmap
   output$heatmap <- renderPlot({
-    print(paste0("heatmap"))
     req(input$selectStudy, input$selectContrast)
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
@@ -329,7 +324,6 @@ server <- function(input, output, session) {
   
   # Enrichr results
   output$enrichPlot <- renderPlot({
-    print(paste0("enrichr"))
     req(input$selectStudy, input$selectContrast, input$selectEM)
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
@@ -374,7 +368,6 @@ server <- function(input, output, session) {
 
   # Comparison
   output$upset <- renderPlot({
-    print(paste0("upset"))
     req(input$upsetSelect)
     deg_type <- input$upsetSelect
     studies <- metadata %>% pull(study_id) %>% unique()
@@ -405,8 +398,6 @@ server <- function(input, output, session) {
     
     UpSet(m, row_names_gp = grid::gpar(fontsize = 10))
   })
-  
-  
 }
 
 

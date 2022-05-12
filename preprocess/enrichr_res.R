@@ -19,7 +19,7 @@ library(tidyverse)
 # CONSTANTS
 #-------------------------------------------------------------------------------
 
-OUTPUT_FILENAME <- "eres.rds"
+OUTPUT_FILENAME <- "enrichr_res.csv.gz"
 
 METADATA_CSV <- "metadata/metadata.csv"
 DEG_SUFFIX <- "_degs.csv.gz"
@@ -79,7 +79,12 @@ eres <- lapply(unique_groups, function(x) {
   bind_rows(resup, resdn)
 })
 
-saveRDS(eres, file = OUTPUT_FILENAME)  
-
+lapply(as.list(names(eres)), function(x) {
+  eres[[x]] %>% 
+    mutate(Study_Contrast = x) %>% 
+    relocate(Study_Contrast)
+}) %>% 
+  bind_rows() %>% 
+  write_csv(OUTPUT_FILENAME)
 
 

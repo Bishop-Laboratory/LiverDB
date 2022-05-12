@@ -19,6 +19,7 @@ library(tidyverse)
 
 APP_DATA_FILENAME <- "app_data.rds"
 
+ERES_CSV <- "enrichr_res.csv.gz"
 METADATA_CSV <- "metadata/metadata.csv"
 CONTRASTS_CSV <- "metadata/contrasts.csv"
 DEG_SUFFIX <- "_degs.csv.gz"
@@ -65,12 +66,25 @@ exps <- lapply(study_ids, function(id) {
     select(-gene_id)
 })
 
+# Get enrichr results and convert to list
+eres_tbl <- read_csv(ERES_CSV)
+
+study_contrasts <- unique(eres_tbl$Study_Contrast)
+names(study_contrasts) <- study_contrasts
+
+eres <- lapply(as.list(study_contrasts), function(x) {
+  eres_tbl %>% 
+    filter(Study_Contrast == x) %>% 
+    select(-Study_Contrast)
+})
+
 # Generate app data
 app_data <-  list(
   metadata = metadata_tbl,
   contrasts = contrasts_tbl,
   degs = degs,
-  exps = exps
+  exps = exps,
+  eres = eres
 )
 
 saveRDS(app_data, file = APP_DATA_FILENAME)

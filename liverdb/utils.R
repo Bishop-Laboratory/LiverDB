@@ -17,62 +17,62 @@ makeHeaders <- function(title, message, fs=1.3) {
 
 
 #' Makes the global data for the app
-makeGlobalData <- function(APP_DATA) {
-  exp <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/gene_exp.csv.gz")
-  samples <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/samples.csv")
-  contrasts <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/contrasts.csv")
-  degs <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/degs.csv.gz")
-  app_data <- list(
-    exp=exp, samples=samples, contrasts=contrasts, degs=degs
-  )
-  ensembl <- biomaRt::useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
-  G_list <- biomaRt::getBM(attributes= c("ensembl_gene_id","hgnc_symbol"), mart= ensembl)
-  ens2sym <- G_list %>%
-    filter(hgnc_symbol != "") %>%
-    rename(gene_id=ensembl_gene_id, gene_name=hgnc_symbol)
-  results <- full_join(
-    exp, samples
-  ) %>%
-    full_join(
-      degs
-    ) %>%
-    full_join(
-      contrasts
-    ) %>%
-    inner_join(
-      ens2sym
-    )
-  results <- results %>%
-    relocate(gene_name) %>%
-    arrange(padj)
-  results_show <- results %>%
-    select(gene_name, study_id, numerator,
-           denominator, fc, padj) %>%
-    distinct(gene_name, study_id, .keep_all = TRUE)
-  # Add in pathway analysis
-  eres <- results_show %>%
-    filter(! is.na(padj) & padj < .05) %>%
-    group_by(study_id) %>%
-    {setNames(group_split(.), group_keys(.)[[1]])} %>%
-    lapply(
-      function(x) {
-        resup <- enrichR::enrichr(
-          genes = x$gene_name[x$fc > 1], databases = "KEGG_2019_Human"
-        ) %>%
-          purrr::pluck("KEGG_2019_Human") %>%
-          mutate(group = "Over-expressed")
-        resdn <- enrichR::enrichr(
-          genes = x$gene_name[x$fc < -1], databases = "KEGG_2019_Human"
-        ) %>%
-          purrr::pluck("KEGG_2019_Human") %>%
-          mutate(group = "Under-expressed")
-        bind_rows(resup, resdn)
-      }
-    )
-  saveRDS(eres, file = "eres.rds", compress = "xz")
-  saveRDS(results, file = "app_data.rds", compress = "xz")
-  return(app_data)
-}
+# makeGlobalData <- function(APP_DATA) {
+#   exp <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/gene_exp.csv.gz")
+#   samples <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/samples.csv")
+#   contrasts <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/contrasts.csv")
+#   degs <- readr::read_csv("https://fibrodb-data.s3.amazonaws.com/degs.csv.gz")
+#   app_data <- list(
+#     exp=exp, samples=samples, contrasts=contrasts, degs=degs
+#   )
+#   ensembl <- biomaRt::useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+#   G_list <- biomaRt::getBM(attributes= c("ensembl_gene_id","hgnc_symbol"), mart= ensembl)
+#   ens2sym <- G_list %>%
+#     filter(hgnc_symbol != "") %>%
+#     rename(gene_id=ensembl_gene_id, gene_name=hgnc_symbol)
+#   results <- full_join(
+#     exp, samples
+#   ) %>%
+#     full_join(
+#       degs
+#     ) %>%
+#     full_join(
+#       contrasts
+#     ) %>%
+#     inner_join(
+#       ens2sym
+#     )
+#   results <- results %>%
+#     relocate(gene_name) %>%
+#     arrange(padj)
+#   results_show <- results %>%
+#     select(gene_name, study_id, numerator,
+#            denominator, fc, padj) %>%
+#     distinct(gene_name, study_id, .keep_all = TRUE)
+#   # Add in pathway analysis
+#   eres <- results_show %>%
+#     filter(! is.na(padj) & padj < .05) %>%
+#     group_by(study_id) %>%
+#     {setNames(group_split(.), group_keys(.)[[1]])} %>%
+#     lapply(
+#       function(x) {
+#         resup <- enrichR::enrichr(
+#           genes = x$gene_name[x$fc > 1], databases = "KEGG_2019_Human"
+#         ) %>%
+#           purrr::pluck("KEGG_2019_Human") %>%
+#           mutate(group = "Over-expressed")
+#         resdn <- enrichR::enrichr(
+#           genes = x$gene_name[x$fc < -1], databases = "KEGG_2019_Human"
+#         ) %>%
+#           purrr::pluck("KEGG_2019_Human") %>%
+#           mutate(group = "Under-expressed")
+#         bind_rows(resup, resdn)
+#       }
+#     )
+#   saveRDS(eres, file = "eres.rds", compress = "xz")
+#   saveRDS(results, file = "app_data.rds", compress = "xz")
+#   return(app_data)
+# }
 
 
 

@@ -239,16 +239,17 @@ Upset_panel <- function() {
 
 DownloadPageContents <- function() {
   md <- paste0("
-  ## FibroDB data
+  ## LiverDB data
   
-  All data in *FibroDB* were processed from a snakemake pipeline available in
-  the FibroDB [GitHub repository](https://github.com/Bishop-Laboratory/FibroDB).
+  All data in *LiverDB* were processed from a snakemake pipeline available in
+  the LiverDB [GitHub repository](https://github.com/Bishop-Laboratory/LiverDB/).
   
+  **[NOT UPLOADED YET]**
   Data are stored on a publicly-accessible AWS bucket and can be downloaded in bulk
   via the following command (assumes you have AWS CLI installed):
   
   ```shell
-  aws s3 sync --no-sign-request s3://fibrodb-data/ fibrodb-data/
+  aws s3 sync --no-sign-request s3://liverdb-data/ liverdb-data/
   ```
   
   <details>
@@ -256,68 +257,61 @@ DownloadPageContents <- function() {
   
   <br>
   
-  Data sets (below) can be downloaded here.
-  * **samples.csv**
+  * **metadata.csv**
     - A CSV file detailing the samples in the dataset
     - Structure:
       * *sample_id*
         - The ID of the sample, in SRA run accession format
+      * *study_id*
+        - The GEO ID for the study from which data were derived
+      * *accession*
+        - The GEO accession number of the sample
       * *condition*
         - The biological condition of the sample
-      * *study_id*
-        - The GEO ID for the study from which data were derived.
       * *paired_end*
         - A logical indicating whether the data are paired-end
       * *stranded*
-        - A string indicating the strandedness of each sample.
+        - A string indicating the strandedness of each sample
   * **contrasts.csv**
-    - A CSV file detailing the contrasts used in calculating DEGs.
+    - A CSV file detailing the contrasts used in calculating DEGs
     - Structure:
       * *study_id*
-        - The GEO ID for the study from which data were derived.
+        - The GEO ID for the study from which data were derived
       * *numerator*
         - In DGE analysis, the numerator 
       * *denominator*
         - In DGE analysis, the denominator
-  * **degs.csv.xz**
-    - An XZ-compressed CSV file containing the DEG results for comparison from *contrasts.csv*
+  * **GSE126848_degs.csv.gz** and **GSE135251_degs.csv.gz**
+    - GZ-compressed CSV files containing the DEG results for comparison from *contrasts.csv*
     - Structure:
-      * *study_id*
-        - The GEO ID for the study from which data were derived.
       * *gene_id*
         - Ensembl gene ID
-      * *fc*
+      * *numerator*
+        - The condition of samples used as the numerator in the DEG
+      * *denominator*
+        - The condition of samples used as the denominator in the DEG
+      * *logFC*
         - The fold change of gene expression between the numerator and denominator (see *contrasts.csv*)
-      * *pval*
-        - The significance of the differential gene expression 
-      * *padj*
+      * *FDR*
         - The significance of the differential gene expression, with multiple testing correction
-      * *sig*
-        - A logical indicating whether the DGE result is significant.
-  * **gene_exp.csv.xz**
-    - An XZ-compressed CSV file containing the expression levels for each gene within each sample. 
-    - Structure
+  * **GSE126848_gene_exp.csv.gz** and **GSE135251_gene_exp.csv.gz**
+    - GZ-compressed CSV files containing the expression levels for each gene within each sample. 
+    - Structure:
       * *gene_id*
         - Ensembl gene ID
       * *sample_id*
         - The ID of the sample, in SRA run accession format
       * *cpm*
-        - The normalized 'Counts Per Million' as derived from edgeR.
+        - The normalized 'Counts Per Million' as derived from edgeR
       * *rpkm*
-        - The 'Reads per Kilobase of transcript, per Million mapped reads'.
+        - The 'Reads per Kilobase of transcript, per Million mapped reads'
       * *tpm*
         - The 'Transcripts Per Million'
-  * **enrichment_res.csv**
-    - A CSV file containing the significant KEGG pathway enrichment results from [enrichR](https://cran.r-project.org/web/packages/enrichR/vignettes/enrichR.html).
+  * **enrichr_res.csv.gz**
+    - A GZ-compressed CSV file containing the significant KEGG pathway enrichment results from [enrichR](https://cran.r-project.org/web/packages/enrichR/vignettes/enrichR.html)
     - Structure
-      * *study_id*
-        - Study on which enrichment was calculcated
-      * *numerator*
-        - In DGE analysis, the numerator 
-      * *denominator*
-        - In DGE analysis, the denominator
-      * *group*
-        - DEG type on which enrichment was calculated (over-expressed or under-expressed).
+      * *Study_Contrast*
+        - Study ID and contrast of the enrichR results
       * *Term*
         - KEGG pathway analyzed
       * *Overlap*
@@ -326,17 +320,19 @@ DownloadPageContents <- function() {
         - P value from enrichment test
       * *Adjusted.P.value*
         - P value adjusted for multiple testing
+      * *Old.P.value*
+        - P value from enrichment test (from an older method of calculation)
+      * *Old.Adjusted.P.value*
+        - P value adjusted for multiple testing (from an older method of calculation)
       * *Odds.Ratio*
-        - Odds ratio from Fisher's exact test.
+        - Odds ratio from Fisher's exact test
       * *Combined.Score*
-        - Aggregate score derived from odds ratio and estimated Z score. See [enrichr documentation](https://maayanlab.cloud/Enrichr/help#background&q=4) for more details.
+        - Aggregate score derived from odds ratio and estimated Z score. See [enrichr documentation](https://maayanlab.cloud/Enrichr/help#background&q=4) for more details
       * *Genes*
-        - Genes from query dataset that were also found in tested gene set.
+        - Genes from query dataset that were also found in tested gene set
+      * *group*
+        - DEG type on which enrichment was calculated (over-expressed or under-expressed)
   </details>
-  <br>
-  
-  The direct download links are listed below:
-    
   ")
   
   tagList(
