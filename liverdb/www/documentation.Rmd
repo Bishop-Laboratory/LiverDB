@@ -44,26 +44,26 @@ The current version of **LiverDB** contains the following datasets:
 
 ## LiverDB Interfaces
 
-![**The 'Results' page interface**. (**A**) Controls the study which is displayed. (**B**) Controls which contrast is displayed for plots that subsets by contrast. (**C**) The Results table which displays the results of differential gene expression analysis for each gene in the study. Selecting a row will change the output in **D**. (**D**) Interactive box plots showing the distribution of gene expression values across samples within each biological condition in the selected study.](usage_fibrodb_1.png){align="right" style="border: none; float: none;" width="1000"}
+![**The 'Results' page interface**. (**A**) Controls the study which is displayed. (**B**) Controls which contrast is displayed for plots that subsets by contrast. (**C**) The Results table which displays the results of differential gene expression analysis for each gene in the study. Selecting a row will change the output in **E**. (**D**) Selector which controls the type of expression data displayed in **E**. (**E**) Interactive box plots showing the distribution of gene expression values across samples within each biological condition in the selected study.](usage_liverdb_1.png){align="right" style="border: none; float: none;" width="1000"}
 
-![**DGE volcano plots**. This interface displays the results of DGE analysis as a volcano plot (highlighted). Selecting a row in the 'Results Table' will cause the corresponding gene to be highlighted in the volcano plot.](usage_fibrodb_2.png){align="right" style="border: none; float: none;" width="1000"}
+![**DGE volcano plots**. This interface displays the results of DGE analysis as a volcano plot (highlighted). Selecting a row in the 'Results Table' will cause the corresponding gene to be highlighted in the volcano plot.](usage_liverdb_2.png){align="right" style="border: none; float: none;" width="1000"}
 
-![**DGE Heatmap**. This interface displays the top hits from DGE analysis as a heatmap for the selected study.](usage_fibrodb_3.png){align="right" style="border: none; float: none;" width="1000"}
+![**DGE Heatmap**. This interface displays the top hits from DGE analysis as a heatmap for the selected study.](usage_liverdb_3.png){align="right" style="border: none; float: none;" width="1000"}
 
-![**Pathway enrichment plot**. This interface displays the top results from KEGG pathway analysis as a heatmap. A drop down is available for controlling the displayed enrichment metric. "Combined.Score" - a combination of the p value from Fisher's exact test and z score from expected enrichment; "Odds.Ratio" - odds ratio from Fisher's exist test; "Padj (-log10)" - Adjusted p value from enrichment analysis, log transformed. For more info, see the [enrichr](https://maayanlab.cloud/Enrichr/) documentation.](usage_fibrodb_4.png){align="right" style="border: none; float: none;" width="1000"}
+![**Pathway enrichment plot**. This interface displays the top results from KEGG pathway analysis as a heatmap. A drop down is available for controlling the displayed enrichment metric. "Combined.Score" - a combination of the p value from Fisher's exact test and z score from expected enrichment; "Odds.Ratio" - odds ratio from Fisher's exist test; "Padj (-log10)" - Adjusted p value from enrichment analysis, log transformed. For more info, see the [enrichr](https://maayanlab.cloud/Enrichr/) documentation.](usage_liverdb_4.png){align="right" style="border: none; float: none;" width="1000"}
 
-![**DGE UpSet Plot**. This interface displays an UpSet plot which is used to determine the number of DEGs seen mutually across study/contrast pairs. A drop down menu is used to control whether Over- or Under-expressed DEGs are compared.](usage_fibrodb_5.png){align="right" style="border: none; float: none;" width="1000"}
+![**DGE UpSet Plot**. This interface displays an UpSet plot which is used to determine the number of DEGs seen mutually across study/contrast pairs. A drop down menu is used to control whether Over- or Under-expressed DEGs are compared.](usage_liverdb_5.png){align="right" style="border: none; float: none;" width="1000"}
 
 ## Terminology
 
 - *DGE*: Differential Gene Expression
   - Differential Gene Expression refers to a significant difference in the expression of a gene between two conditions of interest. In this study, we calculated DGE using the [egdeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html){target="_blank"} R/Bioconductor package.
-- *RPKM*: Reads Per Kilobase of transcript, per Million mapped reads
-  - Read counts normalized based on transcript length and read depth. [More info](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/){target="_blank"}.
 - *CPM*: Counts per Million
   - Read counts normalized by library size. In this case, they were normalized using the moderated counts-per-million method in [egdeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html){target="_blank"}.
 - *TPM*: Transcripts per Million
   - Read counts normalized based on transcript length and read depth (different from RPKM). [More info](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/){target="_blank"}.
+- *RPKM*: Reads Per Kilobase of transcript, per Million mapped reads
+  - Read counts normalized based on transcript length and read depth. [More info](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/){target="_blank"}.
 
 
 ## Bugs

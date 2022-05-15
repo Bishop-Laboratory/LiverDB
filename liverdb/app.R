@@ -172,14 +172,19 @@ server <- function(input, output, session) {
   
   # Expression plot
   output$countplot <- plotly::renderPlotly({
-    req(input$selectStudy, current_gene())
+    req(input$selectStudy, input$selectCTS, current_gene())
     study <- input$selectStudy
+    cts_sel <- input$selectCTS
     gene <- current_gene()
 
-    plt <- exps[[study]] %>%
+    plt <- exps[[study]][[tolower(cts_sel)]] %>%
       dplyr::filter(gene_name == gene) %>% 
-      pivot_longer(!gene_name, names_to = "sample_id", values_to = "tpm") %>% 
-      rename(expression = "tpm") %>% 
+      pivot_longer(
+        !gene_name,
+        names_to = "sample_id",
+        values_to = tolower(cts_sel)
+      ) %>% 
+      rename(expression = tolower(cts_sel)) %>% 
       left_join(
         metadata %>% select(sample_id, condition),
         by = c("sample_id")
@@ -190,7 +195,7 @@ server <- function(input, output, session) {
       geom_boxplot(width = .65, alpha = .6, outlier.shape = NA) +
       geom_jitter(width = .15) +
       xlab("Conditions of Samples") +
-      ylab(paste0("Expression (TPM)")) +
+      ylab(paste0("Expression (", cts_sel, ")")) +
       theme_gray(base_size = 13) +
       ggtitle(gene) +
       theme(legend.position = "none")
@@ -256,9 +261,10 @@ server <- function(input, output, session) {
   
   # Heatmap
   output$heatmap <- renderPlot({
-    req(input$selectStudy, input$selectContrast)
+    req(input$selectStudy, input$selectContrast, input$selectCTS2)
     study <- input$selectStudy
     pair <- strsplit(input$selectContrast, " vs. ")[[1]]
+    cts_sel <- input$selectCTS2
     
     toplt <- degs[[study]] %>% 
       rename(padj = FDR, fc = logFC)
@@ -278,10 +284,14 @@ server <- function(input, output, session) {
       slice_min(order_by = padj, n = 12) %>%
       pull(gene_name)
     
-    topvt <- exps[[study]] %>%
+    topvt <- exps[[study]][[tolower(cts_sel)]] %>%
       dplyr::filter(gene_name %in% g2plt) %>% 
-      pivot_longer(!gene_name, names_to = "sample_id", values_to = "tpm") %>% 
-      rename(counts = "tpm") %>% 
+      pivot_longer(
+        !gene_name,
+        names_to = "sample_id",
+        values_to = tolower(cts_sel)
+      ) %>% 
+      rename(counts = tolower(cts_sel)) %>% 
       left_join(
         metadata %>% select(sample_id, condition),
         by = c("sample_id")
@@ -315,7 +325,7 @@ server <- function(input, output, session) {
       angle_col = "45",
       annotation_col = annot,
       annotation_colors = ann_colors,
-      name = "TPM",
+      name = cts_sel,
       main = plot_title
     )
     

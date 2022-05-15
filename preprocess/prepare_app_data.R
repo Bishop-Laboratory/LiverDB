@@ -58,12 +58,29 @@ degs <- lapply(study_ids, function(id) {
 
 exps <- lapply(study_ids, function(id) {
   filename <- paste0(id, EXP_SUFFIX)
-  read_csv(filename) %>% 
+  
+  cpm <- read_csv(filename) %>% 
+    select(gene_id, sample_id, cpm) %>% 
+    pivot_wider(names_from = sample_id, values_from = cpm) %>% 
+    inner_join(ens2sym, by = c("gene_id")) %>% 
+    relocate(gene_name) %>% 
+    select(-gene_id)
+  
+  rpkm <- read_csv(filename) %>% 
+    select(gene_id, sample_id, rpkm) %>% 
+    pivot_wider(names_from = sample_id, values_from = rpkm) %>% 
+    inner_join(ens2sym, by = c("gene_id")) %>% 
+    relocate(gene_name) %>% 
+    select(-gene_id)
+  
+  tpm <- read_csv(filename) %>% 
     select(gene_id, sample_id, tpm) %>% 
     pivot_wider(names_from = sample_id, values_from = tpm) %>% 
     inner_join(ens2sym, by = c("gene_id")) %>% 
     relocate(gene_name) %>% 
     select(-gene_id)
+  
+  list(cpm = cpm, rpkm = rpkm, tpm = tpm)
 })
 
 # Get enrichr results and convert to list

@@ -130,6 +130,17 @@ Expression_panel <- function() {
     fluidRow(
       column(
         width = 12,
+        selectInput(
+          inputId = "selectCTS",
+          choices = c("CPM", "TPM", "RPKM"),
+          selected = "CPM", 
+          label = "Normalization"
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
         plotly::plotlyOutput(outputId = "countplot", height = "500px")
       )
     )
@@ -148,6 +159,17 @@ Heatmap_panel <- function() {
           message=paste0("Heatmap of top DEG count plots for samples in the selected study.")
         ),
         hr()
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        selectInput(
+          inputId = "selectCTS2",
+          choices = c("CPM", "TPM", "RPKM"),
+          selected = "CPM", 
+          label = "Normalization"
+        )
       )
     ),
     fluidRow(
