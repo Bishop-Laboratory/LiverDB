@@ -263,10 +263,10 @@ DownloadPageContents <- function() {
   md <- paste0("
   ## LiverDB data
   
-  All data in *LiverDB* were processed from a snakemake pipeline available in
-  the LiverDB [GitHub repository](https://github.com/Bishop-Laboratory/LiverDB/).
+  Code used to process the data seen in LiverDB is available in
+  the LiverDB <a href='https://github.com/Bishop-Laboratory/LiverDB/' target='_blank'>GitHub repository</a>.
+
   
-  **[NOT UPLOADED YET]**
   Data are stored on a publicly-accessible AWS bucket and can be downloaded in bulk
   via the following command (assumes you have AWS CLI installed):
   
@@ -330,7 +330,8 @@ DownloadPageContents <- function() {
       * *tpm*
         - The 'Transcripts Per Million'
   * **enrichr_res.csv.gz**
-    - A GZ-compressed CSV file containing the significant KEGG pathway enrichment results from [enrichR](https://cran.r-project.org/web/packages/enrichR/vignettes/enrichR.html)
+    - A GZ-compressed CSV file containing the significant KEGG pathway enrichment results from
+      <a href='https://cran.r-project.org/web/packages/enrichR/vignettes/enrichR.html' target='_blank'>enrichR</a>
     - Structure
       * *Study_Contrast*
         - Study ID and contrast of the enrichR results
@@ -349,7 +350,9 @@ DownloadPageContents <- function() {
       * *Odds.Ratio*
         - Odds ratio from Fisher's exact test
       * *Combined.Score*
-        - Aggregate score derived from odds ratio and estimated Z score. See [enrichr documentation](https://maayanlab.cloud/Enrichr/help#background&q=4) for more details
+        - Aggregate score derived from odds ratio and estimated Z score. See
+          <a href='https://maayanlab.cloud/Enrichr/help#background&q=4' target='_blank'>enrichr documentation</a>
+          for more details
       * *Genes*
         - Genes from query dataset that were also found in tested gene set
       * *group*

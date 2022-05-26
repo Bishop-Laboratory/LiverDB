@@ -148,7 +148,7 @@ for (study_id in unique_studies) {
       estimateGLMTrendedDisp(design) %>%
       estimateGLMTagwiseDisp(design) %>%
       glmFit(design) %>%
-      glmLRT(contrast = c(-1, 1)) %>%
+      glmLRT(contrast = c(1, -1)) %>%
       topTags(n="Inf") %>% 
       pluck("table") %>%
       mutate(
