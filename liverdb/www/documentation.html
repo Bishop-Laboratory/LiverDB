@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2022-05-14" />
+<meta name="date" content="2022-06-14" />
 
 <title>LiverDB Documentation</title>
 
@@ -252,13 +252,21 @@ div.tocify {
 
 <h1 class="title toc-ignore"><em>LiverDB</em> Documentation</h1>
 <h3 class="subtitle">v1.0.0</h3>
-<h4 class="date">2022-05-14</h4>
+<h4 class="date">2022-06-14</h4>
 
 </div>
 
 
-<p><img src="logo.png" align="right" style="border: none; float: right;" width="360" /></p>
-<p><strong>LiverDB</strong> is a web database for <strong>accessing and exploring liver expression data.</strong>. The data for this database was derived from four studies profiled by <em>ADD AUTHOR HERE, 2022</em>. <strong>LiverDB</strong> is the work of the <a href="https://heartlncrna.github.io/" target="_blank">Uchida laboratory</a>, Center for RNA Medicine, Aalborg University, and the <a href="http://bio-net.dev/" target="_blank">Bioinformatics Research Network</a>.</p>
+<p><img src="logo.png" align="right" style="border: none; float: right;"
+width="360" /></p>
+<p><strong>LiverDB</strong> is a web database for <strong>accessing and
+exploring liver expression data.</strong>. The data for this database
+was derived from four studies profiled by <em>Ilieva et al., 2022</em>.
+<strong>LiverDB</strong> is the work of the <a
+href="https://heartlncrna.github.io/" target="_blank">Uchida
+laboratory</a>, Center for RNA Medicine, Aalborg University, and the <a
+href="http://www.bioresnet.org/" target="_blank">Bioinformatics Research
+Network</a>.</p>
 <p>Key features:</p>
 <ol style="list-style-type: decimal">
 <li><p>View transcriptomic data across two liver studies</p></li>
@@ -267,33 +275,70 @@ div.tocify {
 </ol>
 <div id="datasets" class="section level2">
 <h2>Datasets</h2>
-<p>The current version of <strong>LiverDB</strong> contains the following datasets:</p>
+<p>The current version of <strong>LiverDB</strong> contains the
+following datasets:</p>
 <ul>
-<li><p><a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE126848" target="_blank">GSE126848</a>: Hepatic transcriptome signatures in patients with varying degrees of non-alcoholic fatty liver disease compared to healthy normal-weight individuals.</p></li>
-<li><p><a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE135251" target="_blank">GSE135251</a>: Transcriptomic profiling across the spectrum of non-alcoholic fatty liver disease.</p></li>
+<li><p><a
+href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE126848"
+target="_blank">GSE126848</a>: Hepatic transcriptome signatures in
+patients with varying degrees of non-alcoholic fatty liver disease
+compared to healthy normal-weight individuals.</p></li>
+<li><p><a
+href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE135251"
+target="_blank">GSE135251</a>: Transcriptomic profiling across the
+spectrum of non-alcoholic fatty liver disease.</p></li>
 </ul>
 </div>
 <div id="liverdb-interfaces" class="section level2">
 <h2>LiverDB Interfaces</h2>
 <div class="figure">
-<img src="usage_liverdb_1.png" align="right" style="border: none; float: none;" width="1000" alt="" />
-<p class="caption"><strong>The ‘Results’ page interface</strong>. (<strong>A</strong>) Controls the study which is displayed. (<strong>B</strong>) Controls which contrast is displayed for plots that subsets by contrast. (<strong>C</strong>) The Results table which displays the results of differential gene expression analysis for each gene in the study. Selecting a row will change the output in <strong>E</strong>. (<strong>D</strong>) Selector which controls the type of expression data displayed in <strong>E</strong>. (<strong>E</strong>) Interactive box plots showing the distribution of gene expression values across samples within each biological condition in the selected study.</p>
+<img src="usage_liverdb_1.png" align="right"
+style="border: none; float: none;" width="1000" alt="" />
+<p class="caption"><strong>The ‘Results’ page interface</strong>.
+(<strong>A</strong>) Controls the study which is displayed.
+(<strong>B</strong>) Controls which contrast is displayed for plots that
+subsets by contrast. (<strong>C</strong>) The Results table which
+displays the results of differential gene expression analysis for each
+gene in the study. Selecting a row will change the output in
+<strong>E</strong>. (<strong>D</strong>) Selector which controls the
+type of expression data displayed in <strong>E</strong>.
+(<strong>E</strong>) Interactive box plots showing the distribution of
+gene expression values across samples within each biological condition
+in the selected study.</p>
 </div>
 <div class="figure">
-<img src="usage_liverdb_2.png" align="right" style="border: none; float: none;" width="1000" alt="" />
-<p class="caption"><strong>DGE volcano plots</strong>. This interface displays the results of DGE analysis as a volcano plot (highlighted). Selecting a row in the ‘Results Table’ will cause the corresponding gene to be highlighted in the volcano plot.</p>
+<img src="usage_liverdb_2.png" align="right"
+style="border: none; float: none;" width="1000" alt="" />
+<p class="caption"><strong>DGE volcano plots</strong>. This interface
+displays the results of DGE analysis as a volcano plot (highlighted).
+Selecting a row in the ‘Results Table’ will cause the corresponding gene
+to be highlighted in the volcano plot.</p>
 </div>
 <div class="figure">
-<img src="usage_liverdb_3.png" align="right" style="border: none; float: none;" width="1000" alt="" />
-<p class="caption"><strong>DGE Heatmap</strong>. This interface displays the top hits from DGE analysis as a heatmap for the selected study.</p>
+<img src="usage_liverdb_3.png" align="right"
+style="border: none; float: none;" width="1000" alt="" />
+<p class="caption"><strong>DGE Heatmap</strong>. This interface displays
+the top hits from DGE analysis as a heatmap for the selected study.</p>
 </div>
 <div class="figure">
-<img src="usage_liverdb_4.png" align="right" style="border: none; float: none;" width="1000" alt="" />
-<p class="caption"><strong>Pathway enrichment plot</strong>. This interface displays the top results from KEGG pathway analysis as a heatmap. A drop down is available for controlling the displayed enrichment metric. “Combined.Score” - a combination of the p value from Fisher’s exact test and z score from expected enrichment; “Odds.Ratio” - odds ratio from Fisher’s exist test; “Padj (-log10)” - Adjusted p value from enrichment analysis, log transformed. For more info, see the <a href="https://maayanlab.cloud/Enrichr/">enrichr</a> documentation.</p>
+<img src="usage_liverdb_4.png" align="right"
+style="border: none; float: none;" width="1000" alt="" />
+<p class="caption"><strong>Pathway enrichment plot</strong>. This
+interface displays the top results from KEGG pathway analysis as a
+heatmap. A drop down is available for controlling the displayed
+enrichment metric. “Combined.Score” - a combination of the p value from
+Fisher’s exact test and z score from expected enrichment; “Odds.Ratio” -
+odds ratio from Fisher’s exist test; “Padj (-log10)” - Adjusted p value
+from enrichment analysis, log transformed. For more info, see the <a
+href="https://maayanlab.cloud/Enrichr/">enrichr</a> documentation.</p>
 </div>
 <div class="figure">
-<img src="usage_liverdb_5.png" align="right" style="border: none; float: none;" width="1000" alt="" />
-<p class="caption"><strong>DGE UpSet Plot</strong>. This interface displays an UpSet plot which is used to determine the number of DEGs seen mutually across study/contrast pairs. A drop down menu is used to control whether Over- or Under-expressed DEGs are compared.</p>
+<img src="usage_liverdb_5.png" align="right"
+style="border: none; float: none;" width="1000" alt="" />
+<p class="caption"><strong>DGE UpSet Plot</strong>. This interface
+displays an UpSet plot which is used to determine the number of DEGs
+seen mutually across study/contrast pairs. A drop down menu is used to
+control whether Over- or Under-expressed DEGs are compared.</p>
 </div>
 </div>
 <div id="terminology" class="section level2">
@@ -301,25 +346,42 @@ div.tocify {
 <ul>
 <li><em>DGE</em>: Differential Gene Expression
 <ul>
-<li>Differential Gene Expression refers to a significant difference in the expression of a gene between two conditions of interest. In this study, we calculated DGE using the <a href="https://bioconductor.org/packages/release/bioc/html/edgeR.html" target="_blank">egdeR</a> R/Bioconductor package.</li>
+<li>Differential Gene Expression refers to a significant difference in
+the expression of a gene between two conditions of interest. In this
+study, we calculated DGE using the <a
+href="https://bioconductor.org/packages/release/bioc/html/edgeR.html"
+target="_blank">egdeR</a> R/Bioconductor package.</li>
 </ul></li>
 <li><em>CPM</em>: Counts per Million
 <ul>
-<li>Read counts normalized by library size. In this case, they were normalized using the moderated counts-per-million method in <a href="https://bioconductor.org/packages/release/bioc/html/edgeR.html" target="_blank">egdeR</a>.</li>
+<li>Read counts normalized by library size. In this case, they were
+normalized using the moderated counts-per-million method in <a
+href="https://bioconductor.org/packages/release/bioc/html/edgeR.html"
+target="_blank">egdeR</a>.</li>
 </ul></li>
 <li><em>TPM</em>: Transcripts per Million
 <ul>
-<li>Read counts normalized based on transcript length and read depth (different from RPKM). <a href="https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/" target="_blank">More info</a>.</li>
+<li>Read counts normalized based on transcript length and read depth
+(different from RPKM). <a
+href="https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/"
+target="_blank">More info</a>.</li>
 </ul></li>
-<li><em>RPKM</em>: Reads Per Kilobase of transcript, per Million mapped reads
+<li><em>RPKM</em>: Reads Per Kilobase of transcript, per Million mapped
+reads
 <ul>
-<li>Read counts normalized based on transcript length and read depth. <a href="https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/" target="_blank">More info</a>.</li>
+<li>Read counts normalized based on transcript length and read depth. <a
+href="https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/"
+target="_blank">More info</a>.</li>
 </ul></li>
 </ul>
 </div>
 <div id="bugs" class="section level2">
 <h2>Bugs</h2>
-<p>LiverDB is a new database, which means bugs may occasionally occur. If you encounter any bugs or unexpected behavior, please <a href="https://github.com/Bishop-Laboratory/LiverDB/issues/">open an issue</a> on the RLBase GitHub repo and describe, in as much detail as possible, the following:</p>
+<p>LiverDB is a new database, which means bugs may occasionally occur.
+If you encounter any bugs or unexpected behavior, please <a
+href="https://github.com/Bishop-Laboratory/LiverDB/issues/">open an
+issue</a> on the RLBase GitHub repo and describe, in as much detail as
+possible, the following:</p>
 <ol style="list-style-type: decimal">
 <li>What you expected LiverDB to do.</li>
 <li>What LiverDB did and why it was unexpected.</li>
@@ -328,9 +390,11 @@ div.tocify {
 </div>
 <div id="license-and-attribution" class="section level2">
 <h2>License and attribution</h2>
-<p>LiverDB is licensed under an MIT license and we ask that you please cite LiverDB in any published work like so:</p>
+<p>LiverDB is licensed under an MIT license and we ask that you please
+cite LiverDB in any published work like so:</p>
 <blockquote>
-<p>ADD AUTHOR HERE, LiverDB: ADD PUBLICATION TITLE, 2022</p>
+<p>Ilieva et al., 2021, LiverDB: Systematic analysis of long non-coding
+RNA genes in nonalcoholic fatty liver disease, 2022</p>
 </blockquote>
 </div>
 

@@ -23,7 +23,7 @@ source("../utils.R")
 
 ![](logo.png){align="right" style="border: none; float: right;" width="360"}
 
-**LiverDB** is a web database for **accessing and exploring liver expression data.**. The data for this database was derived from four studies profiled by *ADD AUTHOR HERE, 2022*. **LiverDB** is the work of the [Uchida laboratory](https://heartlncrna.github.io/){target="_blank"}, Center for RNA Medicine, Aalborg University, and the [Bioinformatics Research Network](http://bio-net.dev/){target="_blank"}.
+**LiverDB** is a web database for **accessing and exploring liver expression data.**. The data for this database was derived from four studies profiled by *Ilieva et al., 2022*. **LiverDB** is the work of the [Uchida laboratory](https://heartlncrna.github.io/){target="_blank"}, Center for RNA Medicine, Aalborg University, and the [Bioinformatics Research Network](http://www.bioresnet.org/){target="_blank"}.
 
 Key features:
 
@@ -78,4 +78,5 @@ LiverDB is a new database, which means bugs may occasionally occur. If you encou
 
 LiverDB is licensed under an MIT license and we ask that you please cite LiverDB in any published work like so:
 
-> ADD AUTHOR HERE, LiverDB: ADD PUBLICATION TITLE, 2022
+> Ilieva et al., 2021, LiverDB: Systematic analysis of long non-coding RNA genes
+in nonalcoholic fatty liver disease, 2022
