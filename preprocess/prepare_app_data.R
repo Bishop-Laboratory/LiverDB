@@ -4,8 +4,8 @@
 # - For each study, .csv.gz files for DEGs and expression levels exist in the
 #   same location of this script
 # 
-# A successful run of the R script "process_raw_counts.R" will generate the file
-# requirements above.
+# A successful run of the R script "process_raw_counts.R" and "enrichr_res.R"
+# will generate the file requirements above.
 
 #-------------------------------------------------------------------------------
 # LIBRARIES

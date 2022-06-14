@@ -1,0 +1,17 @@
+name: prep
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - nextflow=21.10.6
+  - fastp=0.23.2
+  - sra-tools=2.10.0
+  - star=2.7.10a
+  - bioconductor-biomart
+  - bioconductor-edger
+  - bioconductor-genomicfeatures
+  - bioconductor-genomicranges
+  - r-enrichr
+  - r-tidyverse

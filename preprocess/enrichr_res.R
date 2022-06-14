@@ -1,5 +1,4 @@
-# Output file from this script should already be in liverdb/
-# However, if you wish to run this yourself, this R script requires:
+# This R script requires:
 #
 # - getwd() is the same as the location of this script
 # - For each study, .csv.gz files for DEGs and expression levels exist in the
