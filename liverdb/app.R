@@ -20,6 +20,7 @@ source("utils.R")
 
 GEO_BASE <- "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="
 GENECARDS_BASE <- "https://www.genecards.org/cgi-bin/carddisp.pl?gene="
+S3_HTTPS <- "https://liverdb-data.s3.amazonaws.com/"
 
 app_data <- readRDS("app_data.rds")
 
@@ -407,6 +408,33 @@ server <- function(input, output, session) {
     m <- make_comb_mat(set2genes)
     
     UpSet(m, row_names_gp = grid::gpar(fontsize = 10))
+  })
+  
+  
+  ## Downloads
+  output$downloadLinks <- DT::renderDT({
+      tibble(
+          File = c(
+              "metadata.csv",
+              "contrasts.csv",
+              "GSE126848_degs.csv.gz", 
+              "GSE135251_degs.csv.gz",
+              "GSE126848_gene_exp.csv.gz",
+              "GSE135251_gene_exp.csv.gz",
+              "enrichr_res.csv.gz"
+          )
+      ) %>% 
+          mutate(
+              Download = paste0(
+                  "<a href='",
+                  paste0(S3_HTTPS, File), 
+                  "' target='_blank'>link</a>"
+              ) 
+          ) %>%
+          DT::datatable(
+              selection = list(mode = "none"),
+              rownames = FALSE, escape = FALSE, options = list(dom = 't')
+          )
   })
 }
 
