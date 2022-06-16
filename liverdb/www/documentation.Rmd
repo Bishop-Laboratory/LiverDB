@@ -78,5 +78,5 @@ LiverDB is a new database, which means bugs may occasionally occur. If you encou
 
 LiverDB is licensed under an MIT license and we ask that you please cite LiverDB in any published work like so:
 
-> Ilieva et al., 2021, LiverDB: Systematic analysis of long non-coding RNA genes
+> Ilieva et al., LiverDB: Systematic analysis of long non-coding RNA genes
 in nonalcoholic fatty liver disease, 2022
