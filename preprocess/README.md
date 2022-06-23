@@ -6,11 +6,11 @@ Before starting, make sure:
 - Your working directory is `preprocess/`
 - You have `conda` installed ([see here](https://docs.conda.io/en/latest/miniconda.html))
 
-To generate `app_data.rds` which is required to run the web app, you have two options:
-- [Option 1: Generating Data From Scratch](#option-1-generating-data-from-scratch)
-- [Option 2: Download Files from S3](#option-2-download-files-from-s3)
+To generate `app_data.rds` (which houses all the data for the web app), you have two options:
+- [Option 1: Generate Processed Data From Raw Files](#option-1-generate-processed-data-from-raw-files)
+- [Option 2: Download Processed Data from S3](#option-2-download-processed-data-from-s3)
 
-## Option 1: Generating Data From Scratch
+## Option 1: Generate Processed Data From Raw Files
 
 1. Install mamba, create the environment and activate it
 
@@ -64,7 +64,7 @@ mv app_data.rds ../liverdb/
 ```
 
 
-## Option 2: Download Files from S3
+## Option 2: Download Processed Data from S3
 
 1. Install mamba, create the environment and activate it
 
